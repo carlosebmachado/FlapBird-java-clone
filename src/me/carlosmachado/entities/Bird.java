@@ -8,8 +8,9 @@ import javax.imageio.ImageIO;
 
 import me.carlosmachado.main.Game;
 import me.carlosmachado.systems.ErrorMessage;
+import me.carlosmachado.systems.Sound;
 
-public class Player extends Entity {
+public class Bird extends Entity {
 
     public boolean isPressed = false;
 
@@ -24,7 +25,10 @@ public class Player extends Entity {
     private final int DOWN = 2;
     private int eyeDir = MID;
 
-    public Player(int x, int y, int width, int height, double speed) {
+    private final int MAX_ANIM_FRAMES = 5, MAX_ANIM_INDEX = 3;
+    private int curAnimFrames = 0, curAnimIndex = 0;
+
+    public Bird(int x, int y, int width, int height, double speed) {
         super(x, y, width, height, speed, null);
         sprites = new BufferedImage[3];
         try {
@@ -34,6 +38,7 @@ public class Player extends Entity {
         } catch (IOException e) {
             ErrorMessage.print(e);
         }
+        this.x -= sprites[0].getWidth() / 2;
     }
 
     @Override
@@ -43,6 +48,7 @@ public class Player extends Entity {
             movement += GRAVITY;
         } else if (isPressed && y > 0) {
             movement = -IMPULSE;
+            Sound.wing.play();
         }
         y += movement;
 
@@ -60,9 +66,20 @@ public class Player extends Entity {
             if (e != this) {
                 // game over se colidiu
                 if (Entity.isColidding(this, e)) {
-                    Game.restartGame();
+                    Game.state = Game.LOSE;
+                    Sound.die.play();
+                    Sound.hit.play();
                     return;
                 }
+            }
+        }
+
+        curAnimFrames++;
+        if (curAnimFrames >= MAX_ANIM_FRAMES) {
+            curAnimFrames = 0;
+            curAnimIndex++;
+            if (curAnimIndex >= MAX_ANIM_INDEX) {
+                curAnimIndex = 0;
             }
         }
     }
@@ -72,17 +89,17 @@ public class Player extends Entity {
         Graphics2D g2 = (Graphics2D) g;
         switch (eyeDir) {
             case DOWN:
-                g2.rotate(Math.toRadians(20), this.getX() + width / 2, this.getY() + height / 2);
-                g2.drawImage(sprites[1], this.getX(), this.getY(), null);
-                g2.rotate(Math.toRadians(-20), this.getX() + width / 2, this.getY() + height / 2);
+                g2.rotate(Math.toRadians(20), getX() + width / 2, getY() + height / 2);
+                g2.drawImage(sprites[curAnimIndex], getX(), getY(), null);
+                g2.rotate(Math.toRadians(-20), getX() + width / 2, getY() + height / 2);
                 break;
             case UP:
-                g2.rotate(Math.toRadians(-20), this.getX() + width/2 ,this.getY() + height/2);
-                g2.drawImage(sprites[1], this.getX(), this.getY(), null);
-                g2.rotate(Math.toRadians(20),this.getX() + width/2 ,this.getY() + height/2);
+                g2.rotate(Math.toRadians(-20), getX() + width / 2, getY() + height / 2);
+                g2.drawImage(sprites[curAnimIndex], getX(), getY(), null);
+                g2.rotate(Math.toRadians(20), getX() + width / 2, getY() + height / 2);
                 break;
             default:
-                g2.drawImage(sprites[1], this.getX(), this.getY(), null);
+                g2.drawImage(sprites[curAnimIndex], getX(), getY(), null);
                 break;
         }
     }

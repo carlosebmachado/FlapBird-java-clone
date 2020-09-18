@@ -1,9 +1,9 @@
 package me.carlosmachado.entities;
 
-import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import me.carlosmachado.main.Game;
+import me.carlosmachado.systems.Sound;
 
 public class Pipe extends Entity {
     
@@ -23,6 +23,7 @@ public class Pipe extends Entity {
         if (x + width < Game.SCREEN_WIDTH / 2 && enabled) {
             Game.score += 0.5;
             enabled = false;
+            Sound.point.play();
         }
     }
 

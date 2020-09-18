@@ -8,7 +8,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -19,10 +18,11 @@ import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
 import me.carlosmachado.entities.Entity;
-import me.carlosmachado.entities.Player;
+import me.carlosmachado.entities.Bird;
 import me.carlosmachado.systems.UI;
 import me.carlosmachado.systems.Generator;
 import me.carlosmachado.systems.ErrorMessage;
+import me.carlosmachado.systems.Sound;
 
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
@@ -36,10 +36,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
     private final BufferedImage curFrame;
 
     public static List<Entity> entities;
-    public static Player player;
+    public static Bird player;
 
     public static Generator generator;
     private BufferedImage background;
+    
+    public static final int PLAYING = 0;
+    public static final int LOSE = 1;
+    public static final int FIRST_START = 2;
+    public static int state = FIRST_START;
 
     public UI ui;
 
@@ -59,7 +64,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
             ErrorMessage.print(e);
         }
         entities = new ArrayList<>();
-        player = new Player(SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2, 34, 24, 2);
+        player = new Bird(SCREEN_WIDTH / 4, (int)(Game.SCREEN_HEIGHT / 4 * 2.5), 34, 24, 2);
         generator = new Generator();
         ui = new UI();
 
@@ -93,16 +98,33 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
     public static void restartGame() {
         score = 0;
         entities.clear();
-        player = new Player(Game.SCREEN_WIDTH / 2 - 30, Game.SCREEN_HEIGHT / 2, 16, 16, 2);
+        player = new Bird(Game.SCREEN_WIDTH / 4, (int)(Game.SCREEN_HEIGHT / 4 * 2.5), 34, 24, 2);
+        player.isPressed = true;
         entities.add(Game.player);
         generator = new Generator();
     }
 
     public void tick() {
-        generator.tick();
-        for (int i = 0; i < entities.size(); i++) {
-            Entity e = entities.get(i);
-            e.tick();
+        switch(state){
+            case PLAYING:
+                generator.tick();
+                for (int i = 0; i < entities.size(); i++) {
+                    Entity e = entities.get(i);
+                    e.tick();
+                }
+                break;
+            case LOSE:
+                if(player.isPressed){
+                    Game.restartGame();
+                    Sound.swoosh.play();
+                    state = PLAYING;
+                }
+            case FIRST_START:
+                if(player.isPressed){
+                    Sound.swoosh.play();
+                    state = PLAYING;
+                }
+                break;
         }
     }
 
@@ -113,7 +135,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
             return;
         }
         Graphics g = curFrame.getGraphics();
-        g.setColor(new Color(122, 102, 255));
+        g.setColor(new Color(0, 0, 0));
         g.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
         // game render
@@ -123,12 +145,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
             Entity e = entities.get(i);
             e.render(g);
         }
+        switch(state){
+            case PLAYING:
+                ui.render(g);
+                break;
+            case LOSE:
+                ui.loseScreen(g);
+                break;
+            case FIRST_START:
+                ui.startScreen(g);
+                break;
+        }
         //
 
         g.dispose();
         g = bs.getDrawGraphics();
         g.drawImage(curFrame, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, null);
-        ui.render(g);
         bs.show();
     }
 
